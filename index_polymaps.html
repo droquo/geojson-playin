@@ -1,0 +1,48 @@
+<!--shamelessly lifted from https://github.com/bvmou/couchmap-utils/blob/master/couchapp/_attachments/index.html -->
+
+<!doctype html>
+
+<html>
+  <head>
+    <script src="./index_polymaps_helpers/polymaps-couchbb.js"></script>
+    <link href="style/default-polymaps.css" rel="stylesheet" type="text/css" />
+  </head>
+  
+  <body id="mapbody">
+    <script type="text/javascript">
+    	var po = org.polymaps;
+
+		var map = po.map()
+		  .container(document.body.appendChild(po.svg("svg")))
+		  .center({lat: 42.337174, lon: -83.048271})
+		  .zoom(14)
+		  .add(po.interact())
+		  .add(po.hash());
+		
+		map.add(po.image()
+    	  .url(po.url("http://{S}tile.cloudmade.com"
+    	+ "/1a1b06b230af4efdbb989ea99e9841af" // http://cloudmade.com/register
+    	+ "/999/256/{Z}/{X}/{Y}.png")
+    	  .hosts(["a.", "b.", "c.", ""])));
+
+		map.add(po.geoJson()
+		  .url("http://detroitapi.iriscouch.com/libraries/_design/gc-utils/_spatial/geoms?bbox=-90,41,-80,43")
+		  .id("your_id_here")
+		  .tile(true)
+		  .on("load", load))
+		
+		map.add(po.compass()
+		  .pan("none"));
+		
+		function load(e) {
+		  for (var i = 0; i < e.features.length; i++) {
+		    var feature = e.rows[i];
+		    feature.element.setAttribute("id", feature.data.geometry);
+		  }
+		}
+    </script>
+    <div id="map">
+    </div>
+  </body>
+</html>
+

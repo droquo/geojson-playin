@@ -1,0 +1,88 @@
+<!-- shamelessly lifted from boomphisto..com/2011/10/serving-up-geojson-while-having-rest-on.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Another attempt at [plotting] geojson from Detroit API</title>
+		<script type="text/javascript" src="scripts/jquery-1.7.1.min.js"></script>
+		<script type="text/javascript" src="scripts/leaflet.js"></script>
+		<link rel="stylesheet" type="text/css" href="./scripts/leaflet.css">
+	</head>
+	<body>
+		<div id="mapContainer" style="width:800px; height:550px;"></div>
+		<script type="text/javascript">
+			var map;
+			var myLayer;
+
+			//create map
+			$(document).ready(function(){
+				map = new L.Map('mapContainer');
+				var url = 'http://{s}.tile.cloudmade.com/6d5ba945f5f146bd8c1e0ef1bf99eca4/997/256/{z}/{x}/{y}.png';
+				var copyright = 'Map data &copy; 2011 OpenStreetMap contributors, Imagery &copy; 2011 CloudMade';
+				var tileLayer = new L.TileLayer(url, {maxZoom:20, attribution:copyright});
+				var startPosition = new L.LatLng(42.33143, -83.04575);
+
+				map.on('load', function (e){
+					requestUpdatedPlots(e.target.getBounds());
+				});
+
+				map.setView(startPosition, 11).addLayer(tileLayer);
+
+				map.on('moveend', function(e){
+					requestUpdatedPlots(e.target.getBounds());
+				});
+			});
+
+			//request to the DetroitAPI to get the geojson in the current extent
+			function requestUpdatedPlots(bounds){
+				$.ajax(
+					{
+						type: 'GET',
+						url: 'http://detroitapi.iriscouch.com/detroit_public_schools/_design/geo/_spatial/simple?bbox=' + bounds._southWest.lng + ',' + bounds._southWest.lat + ',' + bounds._northEast.lng + ',' + bounds._northEast.lat,
+						dataType: 'jsonp',
+						success: function(result){
+							parseResponseData(result)
+						},
+						error: function(req, status, error){
+							alert('Unable to get data:' + error);
+						}
+					});
+			}
+
+			//parse features retrieved from DetroitAPI
+			function parseResponseData(data) {
+				if (myLayer != undefined){
+					map.removeLayer(myLayer);
+				}
+
+				var count = data.rows.length;
+
+				//add a property called "type" with a value of "Feature to each feature"
+				for (var i = 0; i < count; i++){
+					data.rows[i]["type"] = "Feature";
+				}
+
+				//create the Feature Collection
+				var featureCollection = { type: "FeatureCollection", features: data.rows};
+
+				myLayer = createGeoJsonLayer();
+				myLayer.addGeoJSON(featureCollection);
+				map.addLayer(myLayer);
+			}
+
+			// create desired symbology for layer
+			function createGeoJsonLayer(){
+				var layer = new L.GeoJSON();
+				layer.on('featureparse', function(e){
+					e.layer.setStyle({
+								     color: '#007888',
+								     weight: 2,
+								     fill: true,
+								     fillColor: '#E217A2'
+					});
+				});
+				return layer;
+			}
+		</script>
+	</body>
+</html>	
